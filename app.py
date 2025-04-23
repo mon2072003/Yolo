@@ -11,7 +11,7 @@ app = Flask(_name_)
 CORS(app)
 
 # Correct file path handling
-model_path = r"C:\Users\CS\PycharmProjects\my_vistor_model\assets\best.onnx"
+model_path = os.path.join("assets", "best.onnx")
 
 # Check if file exists
 if not os.path.exists(model_path):
