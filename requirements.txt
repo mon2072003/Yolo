@@ -5,3 +5,4 @@ torch==2.7.0
 numpy==2.1.1
 Pillow==11.2.1
 ultralytics==8.3.115
+gunicorn==20.1.0
