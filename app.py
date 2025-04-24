@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image
 from ultralytics import YOLO
 
-app = Flask(_name_)
+app = Flask(__name__)
 CORS(app)
 
 # Correct file path handling
