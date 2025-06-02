@@ -1,15 +1,20 @@
 FROM python:3.12-slim
 
-# تثبيت الحزم النظامية (اختياري)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      libgl1-mesa-glx libglib2.0-0 && \
+# تثبيت الضروريات فقط
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1-mesa-glx libglib2.0-0 gcc && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+# نسخ المتطلبات وتثبيتها
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip cache purge  # << هذه تمسح كاش التثبيت
+
+# نسخ المشروع
 COPY . .
 
-# استخدم صيغة شل لتوسيع $PORT
+# إعداد Gunicorn
 CMD ["sh", "-c", "gunicorn main:app --bind 0.0.0.0:$PORT"]
