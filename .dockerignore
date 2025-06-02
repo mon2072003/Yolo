@@ -1,15 +1,31 @@
+# Ignore Python cache and compiled files
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
-*.pyd
-*.log
-.env
+
+# Virtual environments
 venv/
+.env/
+*.env
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Git
 .git
 .gitignore
-data/
-media/
-models/
-datasets/
-notebooks/
+
+# Logs
+*.log
+
+# Notebooks and large files
 *.ipynb
+notebooks/
+models/
+checkpoints/
+datasets/
+media/
+data/
