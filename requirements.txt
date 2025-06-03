@@ -1,7 +1,7 @@
-Flask==2.3.3
+torch==1.13.1+cpu
+ultralytics==8.0.126
+Pillow==9.4.0
+numpy==1.23.5
+opencv-python-headless==4.6.0.66
+flask==2.2.3
 flask-cors==3.0.10
-onnxruntime==1.17.1
-opencv-python-headless==4.9.0.80
-numpy==1.24.4
-Pillow==10.2.0
-gunicorn==20.1.0
