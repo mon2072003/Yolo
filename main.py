@@ -31,25 +31,29 @@ def predict():
 
     img = np.array(img)
 
-    # Resize to model's expected input size
+    # Resize image to 640x640 as expected by YOLOv8
     img_resized = cv2.resize(img, (640, 640))
-    img_input = img_resized / 255.0
-    img_input = img_input.transpose(2, 0, 1).astype(np.float32)
-    img_input = np.expand_dims(img_input, axis=0)
+    img_input = img_resized / 255.0  # normalize to [0,1]
+    img_input = img_input.transpose(2, 0, 1).astype(np.float32)  # HWC to CHW
+    img_input = np.expand_dims(img_input, axis=0)  # Add batch dimension
 
     input_name = session.get_inputs()[0].name
     outputs = session.run(None, {input_name: img_input})
 
-    # استخراج الأصناف (class indices)
-    # تأكد من أن هذا يتماشى مع شكل إخراج النموذج لديك
-    try:
-        # نفترض أن المخرجات [boxes, scores, class_ids]
-        class_ids = outputs[2]  # تأكد أن هذا هو المؤشر الصحيح في مخرجاتك
-        classes = [int(cls) for cls in class_ids[0]]
-    except Exception as e:
-        return jsonify({"error": f"Error parsing outputs: {str(e)}", "raw_outputs": [o.tolist() for o in outputs]}), 500
+    # Parse classes from YOLOv8 ONNX output
+    # Assume output[0] shape: [1, num_detections, 6] where each row: [x1, y1, x2, y2, conf, class_id]
+    output = outputs[0]
+    detections = output[0]  # shape: [num_detections, 6]
+
+    classes = []
+    for det in detections:
+        confidence = det[4]
+        if confidence > 0.5:  # apply confidence threshold
+            class_id = int(det[5])
+            classes.append(class_id)
 
     return jsonify({"classes": classes})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
