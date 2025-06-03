@@ -1,21 +1,24 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-import numpy as np
-import onnxruntime as ort
-from PIL import Image
 import cv2
+import torch
+import numpy as np
+from PIL import Image
+from ultralytics import YOLO
 
 app = Flask(__name__)
 CORS(app)
 
+# Correct file path handling
 model_path = os.path.join("assets", "best.onnx")
 
+# Check if file exists
 if not os.path.exists(model_path):
     raise FileNotFoundError(f"Model file not found at {model_path}")
 
-# Load ONNX model
-session = ort.InferenceSession(model_path)
+# Load the trained YOLOv8 model
+model = YOLO(model_path,task="detect")
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -23,35 +26,24 @@ def predict():
         return jsonify({"error": "No file uploaded"}), 400
 
     file = request.files['file']
+    img = Image.open(file.stream)
 
-    try:
-        img = Image.open(file.stream).convert('RGB')
-    except Exception as e:
-        return jsonify({"error": f"Invalid image: {str(e)}"}), 400
+    # Run inference
+    results = model(img)
 
-    img = np.array(img)
-
-    # Resize image to 640x640 as expected by YOLOv8
-    img_resized = cv2.resize(img, (640, 640))
-    img_input = img_resized / 255.0  # normalize to [0,1]
-    img_input = img_input.transpose(2, 0, 1).astype(np.float32)  # HWC to CHW
-    img_input = np.expand_dims(img_input, axis=0)  # Add batch dimension
-
-    input_name = session.get_inputs()[0].name
-    outputs = session.run(None, {input_name: img_input})
-
-    # Parse classes from YOLOv8 ONNX output
-    # Assume output[0] shape: [1, num_detections, 6] where each row: [x1, y1, x2, y2, conf, class_id]
-    output = outputs[0]
-    detections = output[0]  # shape: [num_detections, 6]
-
+    # Parse results
+    detections = []
+    for r in results:
+        for box in r.boxes:
+            x1, y1, x2, y2 = map(int, box.xyxy[0])  # Bounding box
+            conf = float(box.conf[0])  # Confidence
+            cls = int(box.cls[0])  # Class index
+            detections.append({"x1": x1, "y1": y1, "x2": x2, "y2": y2, "conf": conf, "class": cls})
     classes = []
-    for det in detections:
-        confidence = det[4]
-        if confidence > 0.5:  # apply confidence threshold
-            class_id = int(det[5])
-            classes.append(class_id)
-
+    for r in results:
+        for box in r.boxes:
+            cls = int(box.cls[0])  # Class index
+            classes.append(cls)
     return jsonify({"classes": classes})
 
 if __name__ == '__main__':
