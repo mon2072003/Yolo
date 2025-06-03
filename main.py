@@ -9,7 +9,7 @@ import cv2
 app = Flask(__name__)
 CORS(app)
 
-model_path = os.path.join("assets", "model.onnx")
+model_path = os.path.join("assets", "best.onnx")
 
 if not os.path.exists(model_path):
     raise FileNotFoundError(f"Model file not found at {model_path}")
