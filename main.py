@@ -23,10 +23,15 @@ def predict():
         return jsonify({"error": "No file uploaded"}), 400
 
     file = request.files['file']
-    img = Image.open(file.stream).convert('RGB')
+
+    try:
+        img = Image.open(file.stream).convert('RGB')
+    except Exception as e:
+        return jsonify({"error": f"Invalid image: {str(e)}"}), 400
+
     img = np.array(img)
 
-    # Resize to expected input size (adjust to your model)
+    # Resize to model's expected input size
     img_resized = cv2.resize(img, (640, 640))
     img_input = img_resized / 255.0
     img_input = img_input.transpose(2, 0, 1).astype(np.float32)
@@ -35,9 +40,16 @@ def predict():
     input_name = session.get_inputs()[0].name
     outputs = session.run(None, {input_name: img_input})
 
-    # هنا لازم تفكك الـ outputs حسب طبيعة النموذج
-    # مؤقتًا نرجع البيانات الخام
-    return jsonify({"outputs": [o.tolist() for o in outputs]})
+    # استخراج الأصناف (class indices)
+    # تأكد من أن هذا يتماشى مع شكل إخراج النموذج لديك
+    try:
+        # نفترض أن المخرجات [boxes, scores, class_ids]
+        class_ids = outputs[2]  # تأكد أن هذا هو المؤشر الصحيح في مخرجاتك
+        classes = [int(cls) for cls in class_ids[0]]
+    except Exception as e:
+        return jsonify({"error": f"Error parsing outputs: {str(e)}", "raw_outputs": [o.tolist() for o in outputs]}), 500
+
+    return jsonify({"classes": classes})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
